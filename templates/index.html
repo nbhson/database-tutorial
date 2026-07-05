@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Analysis - AI Chat</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <h1>DocAnalyzer</h1>
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </div>
+                    <p class="upload-text">Kéo thả file vào đây</p>
+                    <p class="upload-subtext">hoặc click để chọn file</p>
+                    <p class="upload-formats">Hỗ trợ: PDF, DOCX, TXT, MD, CSV, JSON, XML</p>
+                    <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.doc,.md,.csv,.json,.xml,.yaml,.yml" hidden>
+                </div>
+
+                <!-- Model Selection -->
+                <div class="model-selector">
+                    <label for="modelSelect">🤖 Model:</label>
+                    <select id="modelSelect">
+                        <option value="qwen2.5-coder:7b">qwen2.5-coder:7b</option>
+                    </select>
+                </div>
+
+                <!-- Upload Progress -->
+                <div class="upload-progress" id="uploadProgress" style="display:none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p class="progress-text" id="progressText">Đang xử lý...</p>
+                </div>
+
+                <!-- File Info -->
+                <div class="file-info" id="fileInfo" style="display:none;">
+                    <div class="file-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                    </div>
+                    <div class="file-details">
+                        <p class="file-name" id="fileName">document.pdf</p>
+                        <p class="file-status" id="fileStatus">Đã phân tích</p>
+                    </div>
+                    <button class="btn-icon" id="clearSessionBtn" title="Xóa session">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions" id="quickActions" style="display:none;">
+                <p class="section-title">📌 Câu hỏi gợi ý</p>
+                <button class="quick-btn" data-question="Tóm tắt nội dung chính của tài liệu này">📝 Tóm tắt tài liệu</button>
+                <button class="quick-btn" data-question="Liệt kê các điểm chính trong tài liệu">📋 Các điểm chính</button>
+                <button class="quick-btn" data-question="Có kết luận hoặc khuyến nghị gì quan trọng không?">💡 Kết luận & Khuyến nghị</button>
+            </div>
+
+            <div class="sidebar-footer">
+                <p>Powered by Ollama + Flask</p>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="main-content">
+            <!-- Welcome Screen -->
+            <div class="welcome-screen" id="welcomeScreen">
+                <div class="welcome-icon">
+                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                </div>
+                <h2>Chào mừng đến với DocAnalyzer</h2>
+                <p>Upload một file tài liệu để bắt đầu phân tích và đặt câu hỏi</p>
+                <div class="features">
+                    <div class="feature">
+                        <span class="feature-icon">📄</span>
+                        <span>Hỗ trợ PDF, DOCX, TXT, MD, CSV, JSON, XML</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">🤖</span>
+                        <span>Phân tích bằng AI local (Ollama)</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">💬</span>
+                        <span>Đặt câu hỏi về nội dung tài liệu</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div class="chat-messages" id="chatMessages" style="display:none;">
+                <!-- Messages will be inserted here -->
+            </div>
+
+            <!-- Chat Input -->
+            <div class="chat-input-container" id="chatInputContainer" style="display:none;">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="chatInput" 
+                        rows="1" 
+                        placeholder="Nhập câu hỏi về tài liệu..."
+                        disabled
+                    ></textarea>
+                    <button id="sendBtn" class="send-btn" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+                <p class="input-hint">Nhấn Enter để gửi, Shift+Enter để xuống dòng</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <div class="toast-content">
+            <span class="toast-icon" id="toastIcon">⚠️</span>
+            <span class="toast-message" id="toastMessage">Error message</span>
+        </div>
+    </div>
+
+    <script>
+        // ===== STATE =====
+        let state = {
+            sessionId: null,
+            filename: null,
+            model: 'qwen2.5-coder:7b',
+            isProcessing: false
+        };
+
+        // ===== DOM REFS =====
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const modelSelect = document.getElementById('modelSelect');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileStatus = document.getElementById('fileStatus');
+        const clearSessionBtn = document.getElementById('clearSessionBtn');
+        const quickActions = document.getElementById('quickActions');
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInputContainer = document.getElementById('chatInputContainer');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const toast = document.getElementById('toast');
+        const toastIcon = document.getElementById('toastIcon');
+        const toastMessage = document.getElementById('toastMessage');
+
+        // ===== INIT =====
+        async function init() {
+            await loadModels();
+            setupEventListeners();
+        }
+
+        async function loadModels() {
+            try {
+                const res = await fetch('/api/models');
+                const data = await res.json();
+                if (data.models && data.models.length > 0) {
+                    modelSelect.innerHTML = data.models.map(m => 
+                        `<option value="${m}">${m}</option>`
+                    ).join('');
+                }
+            } catch (e) {
+                console.warn('Could not load models:', e);
+            }
+        }
+
+        // ===== EVENT LISTENERS =====
+        function setupEventListeners() {
+            // Upload area click
+            uploadArea.addEventListener('click', () => fileInput.click());
+            
+            // Drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFile(e.target.files[0]);
+                }
+            });
+
+            // Send message
+            sendBtn.addEventListener('click', sendMessage);
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // Auto-resize textarea
+            chatInput.addEventListener('input', autoResizeTextarea);
+
+            // Clear session
+            clearSessionBtn.addEventListener('click', clearSession);
+
+            // Quick action buttons
+            document.querySelectorAll('.quick-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    chatInput.value = btn.dataset.question;
+                    sendMessage();
+                });
+            });
+        }
+
+        // ===== FILE HANDLING =====
+        async function handleFile(file) {
+            const maxSize = 50 * 1024 * 1024; // 50MB
+            if (file.size > maxSize) {
+                showToast('⚠️', 'File quá lớn. Giới hạn 50MB.');
+                return;
+            }
+
+            const allowedExts = ['.txt', '.pdf', '.docx', '.doc', '.md', '.csv', '.json', '.xml', '.yaml', '.yml'];
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+            if (!allowedExts.includes(ext)) {
+                showToast('⚠️', 'Định dạng file không được hỗ trợ.');
+                return;
+            }
+
+            state.model = modelSelect.value;
+            
+            // Show progress
+            uploadArea.style.display = 'none';
+            uploadProgress.style.display = 'block';
+            progressFill.style.width = '30%';
+            progressText.textContent = `Đang tải lên ${file.name}...`;
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('model', state.model);
+
+            try {
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                progressFill.style.width = '80%';
+                progressText.textContent = 'Đang phân tích với AI...';
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Upload failed');
+                }
+
+                // Success
+                state.sessionId = data.session_id;
+                state.filename = data.filename;
+
+                progressFill.style.width = '100%';
+                progressText.textContent = '✅ Hoàn tất!';
+
+                setTimeout(() => {
+                    uploadProgress.style.display = 'none';
+                    showFileInfo(data);
+                    showAnalysis(data.analysis);
+                }, 500);
+
+            } catch (err) {
+                progressFill.style.width = '100%';
+                progressFill.style.background = '#ef4444';
+                progressText.textContent = '❌ Lỗi: ' + err.message;
+                showToast('❌', err.message);
+                
+                setTimeout(() => {
+                    uploadProgress.style.display = 'none';
+                    uploadArea.style.display = 'block';
+                    progressFill.style.background = 'var(--primary-color)';
+                }, 2000);
+            }
+        }
+
+        // ===== UI UPDATES =====
+        function showFileInfo(data) {
+            fileName.textContent = data.filename;
+            fileStatus.textContent = '✅ Đã phân tích';
+            fileInfo.style.display = 'flex';
+            quickActions.style.display = 'block';
+            uploadArea.style.display = 'none';
+        }
+
+        function showAnalysis(analysis) {
+            // Hide welcome, show chat
+            welcomeScreen.style.display = 'none';
+            chatMessages.style.display = 'flex';
+            chatInputContainer.style.display = 'block';
+            chatInput.disabled = false;
+            sendBtn.disabled = false;
+            chatInput.focus();
+
+            // Clear previous messages
+            chatMessages.innerHTML = '';
+
+            // Add analysis message
+            addMessage('assistant', `📄 **Phân tích tài liệu: ${state.filename}**\n\n${analysis}`);
+        }
+
+        function addMessage(role, content) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = role === 'assistant' ? '🤖' : '👤';
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.innerHTML = formatMessage(content);
+            
+            msgDiv.appendChild(avatar);
+            msgDiv.appendChild(bubble);
+            chatMessages.appendChild(msgDiv);
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function formatMessage(text) {
+            // Convert markdown-like formatting
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function showTypingIndicator() {
+            const div = document.createElement('div');
+            div.className = 'message assistant typing';
+            div.id = 'typingIndicator';
+            div.innerHTML = `
+                <div class="message-avatar">🤖</div>
+                <div class="message-bubble typing-bubble">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            `;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const el = document.getElementById('typingIndicator');
+            if (el) el.remove();
+        }
+
+        // ===== CHAT =====
+        async function sendMessage() {
+            const question = chatInput.value.trim();
+            if (!question || state.isProcessing || !state.sessionId) return;
+
+            state.isProcessing = true;
+            chatInput.disabled = true;
+            sendBtn.disabled = true;
+
+            // Add user message
+            addMessage('user', question);
+            chatInput.value = '';
+            autoResizeTextarea();
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: state.sessionId,
+                        question: question,
+                        model: state.model
+                    })
+                });
+
+                removeTypingIndicator();
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Chat failed');
+                }
+
+                addMessage('assistant', data.answer);
+
+            } catch (err) {
+                removeTypingIndicator();
+                addMessage('assistant', `❌ **Lỗi:** ${err.message}`);
+                showToast('❌', err.message);
+            } finally {
+                state.isProcessing = false;
+                chatInput.disabled = false;
+                sendBtn.disabled = false;
+                chatInput.focus();
+            }
+        }
+
+        // ===== SESSION MANAGEMENT =====
+        async function clearSession() {
+            if (!state.sessionId) return;
+            
+            try {
+                await fetch(`/api/session/${state.sessionId}/clear`, { method: 'POST' });
+            } catch (e) {
+                // ignore
+            }
+
+            // Reset UI
+            state.sessionId = null;
+            state.filename = null;
+            fileInfo.style.display = 'none';
+            quickActions.style.display = 'none';
+            uploadArea.style.display = 'block';
+            chatMessages.style.display = 'none';
+            chatInputContainer.style.display = 'none';
+            welcomeScreen.style.display = 'flex';
+            chatMessages.innerHTML = '';
+            chatInput.value = '';
+            showToast('🔄', 'Đã xóa session. Bạn có thể upload file mới.');
+        }
+
+        // ===== UTILITIES =====
+        function autoResizeTextarea() {
+            chatInput.style.height = 'auto';
+            chatInput.style.height = Math.min(chatInput.scrollHeight, 150) + 'px';
+        }
+
+        function showToast(icon, message) {
+            toastIcon.textContent = icon;
+            toastMessage.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 4000);
+        }
+
+        // ===== START =====
+        init();
+    </script>
+</body>
+</html>
